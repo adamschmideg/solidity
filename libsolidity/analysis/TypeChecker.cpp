@@ -2046,22 +2046,32 @@ bool TypeChecker::visit(MemberAccess const& _memberAccess)
 		}
 		string errorMsg = "Member \"" + memberName + "\" not found or not visible "
 				"after argument-dependent lookup in " + exprType->toString() + ".";
-		if (memberName == "value")
-		{
-			errorMsg.pop_back();
-			errorMsg +=	" - did you forget the \"payable\" modifier?";
-		}
-		else if (exprType->category() == Type::Category::Function)
+
+		if (exprType->category() == Type::Category::Function)
 		{
 			if (auto const& funType = dynamic_pointer_cast<FunctionType const>(exprType))
 			{
+
 				auto const& t = funType->returnParameterTypes();
+
+				bool returnsStruct = false;
+				bool returnsContract = false;
+
 				if (t.size() == 1)
-					if (
-						t.front()->category() == Type::Category::Contract ||
-						t.front()->category() == Type::Category::Struct
-					)
-						errorMsg += " Did you intend to call the function?";
+				{
+					returnsStruct = t.front()->category() == Type::Category::Struct;
+					returnsContract = t.front()->category() == Type::Category::Contract;
+				}
+
+				if (memberName == "value")
+				{
+					if (returnsContract && funType->kind() == FunctionType::Kind::Creation)
+						errorMsg = "Constructor for " + t.front()->toString() + " must be payable for member \"value\" to be available.";
+					else
+						errorMsg = "Member \"value\" is only available for external payable function types.";
+				}
+				else if (returnsContract || returnsStruct)
+					errorMsg += " Did you intend to call the function?";
 			}
 		}
 		if (exprType->category() == Type::Category::Contract)
