@@ -26,6 +26,7 @@
 #include <boost/exception/all.hpp>
 
 using namespace std;
+/* Irrelevant */
 
 /*
 The equivalent of setlocale(LC_ALL, "C") is called before any user code is run.
